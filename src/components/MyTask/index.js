@@ -1,24 +1,30 @@
 import {Component} from 'react'
-import {v4 as uuid} from 'uuid'
-import Tasks from '../Tasks'
+import {v4} from 'uuid'
 
 import {
-  MainContainer,
-  TaskInputContainer,
-  TaskDisplayContainer,
-  Heading,
-  InputContainer,
-  LabelText,
+  HomeContainer,
+  CreateTaskContainer,
+  CreateForm,
+  FormHeading,
+  LabelInputContainer,
+  Label,
   Input,
-  Select,
-  AddButton,
+  SelectInput,
+  OptionInput,
+  Button,
+  AddTaskContainer,
   TagsHeading,
-  TagsContainer,
-  TasksContainer,
+  TagsListUl,
+  TagsList,
   TagsButton,
-  TagListItem,
+  TaskListUl,
+  TaskListLi,
+  TaskText,
+  TaskTag,
   NoTaskText,
 } from './styledComponents'
+
+// These are the lists used in the application. You can move them to any component needed.
 
 const tagsList = [
   {
@@ -49,40 +55,38 @@ const tagsList = [
 
 class MyTask extends Component {
   state = {
-    myTaskList: [],
-    inputTask: '',
-    selectTag: tagsList[0].optionId,
+    inputText: '',
+    inputTag: tagsList[0].optionId,
+    taskList: [],
     activeTag: 'INITIAL',
   }
 
-  onClickAddButton = () => {
-    const {inputTask, selectTag} = this.state
-    const taskName = inputTask
-    const taskCategory = selectTag
-    const id = uuid()
-    const bgColor = false
+  changeInput = event => {
+    this.setState({inputText: event.target.value})
+  }
 
-    if (taskName.length !== 0) {
+  onChangeTag = event => {
+    this.setState({inputTag: event.target.value})
+  }
+
+  submitForm = event => {
+    event.preventDefault()
+    const {inputText, inputTag} = this.state
+    const newTask = {
+      id: v4(),
+      task: inputText,
+      tag: inputTag,
+    }
+    if (inputText.length !== 0) {
       this.setState(prevState => ({
-        myTaskList: [
-          ...prevState.myTaskList,
-          {id, taskName, taskCategory, bgColor},
-        ],
-        inputTask: '',
-        selectTag: tagsList[0].optionId,
+        taskList: [...prevState.taskList, newTask],
+        inputText: '',
+        inputTag: '',
       }))
     }
   }
 
-  onChangeInputTask = event => {
-    this.setState({inputTask: event.target.value})
-  }
-
-  onChangeSelectTag = event => {
-    this.setState({selectTag: event.target.value})
-  }
-
-  onClickTag = event => {
+  onClickActiveTag = event => {
     this.setState(prevState => ({
       activeTag:
         prevState.activeTag === event.target.value
@@ -91,74 +95,102 @@ class MyTask extends Component {
     }))
   }
 
-  render() {
-    const {myTaskList, inputTask, selectTag, activeTag} = this.state
-    const filterTaskList =
-      activeTag === 'INITIAL'
-        ? myTaskList
-        : myTaskList.filter(each => each.taskCategory === activeTag)
-
+  renderCreateTaskView = () => {
+    const {inputText, inputTag} = this.state
     return (
-      <MainContainer>
-        <TaskInputContainer>
-          <Heading>Create a Task!</Heading>
-          <InputContainer>
-            <LabelText for="textInput">Task</LabelText>
+      <CreateTaskContainer>
+        <CreateForm onSubmit={this.submitForm}>
+          <FormHeading>Create a task!</FormHeading>
+          <LabelInputContainer>
+            <Label htmlFor="inputText">Task</Label>
             <Input
-              id="textInput"
               type="text"
               placeholder="Enter the task here"
-              value={inputTask}
-              onChange={this.onChangeInputTask}
+              onChange={this.changeInput}
+              value={inputText}
+              id="inputText"
             />
-            <LabelText for="optionInput">Tags</LabelText>
-            <Select
-              id="optionInput"
-              value={selectTag}
-              onChange={this.onChangeSelectTag}
+          </LabelInputContainer>
+          <LabelInputContainer>
+            <Label htmlFor="selectTag">Tags</Label>
+            <SelectInput
+              onChange={this.onChangeTag}
+              value={inputTag}
+              id="selectTag"
             >
-              {tagsList.map(eachTag => (
-                <option value={eachTag.optionId}>{eachTag.displayText}</option>
+              {tagsList.map(each => (
+                <OptionInput value={each.optionId} key={each.optionId}>
+                  {each.displayText}
+                </OptionInput>
               ))}
-            </Select>
-          </InputContainer>
-          <AddButton type="button" onClick={this.onClickAddButton}>
-            Add Task
-          </AddButton>
-        </TaskInputContainer>
-        <TaskDisplayContainer>
-          <TagsHeading>Tags</TagsHeading>
-          <TagsContainer>
-            {tagsList.map(eachTag => {
-              const isActive = activeTag === eachTag.optionId
-              return (
-                <TagListItem key={eachTag.optionId}>
-                  <TagsButton
-                    type="button"
-                    value={eachTag.optionId}
-                    onClick={this.onClickTag}
-                    isActive={isActive}
-                  >
-                    {eachTag.displayText}
-                  </TagsButton>
-                </TagListItem>
-              )
-            })}
-          </TagsContainer>
-          <TagsHeading>Tasks</TagsHeading>
-          <TasksContainer>
-            {filterTaskList.length === 0 ? (
-              <NoTaskText>No Tasks Added Yet</NoTaskText>
-            ) : (
-              filterTaskList.map(eachTask => (
-                <Tasks key={eachTask.id} taskDetails={eachTask} />
-              ))
-            )}
-          </TasksContainer>
-        </TaskDisplayContainer>
-      </MainContainer>
+            </SelectInput>
+          </LabelInputContainer>
+          <Button type="submit">Add Task</Button>
+        </CreateForm>
+      </CreateTaskContainer>
+    )
+  }
+
+  renderTaskCard = () => {
+    const {taskList, activeTag} = this.state
+    const filterTaskList =
+      activeTag === 'INITIAL'
+        ? taskList
+        : taskList.filter(each => each.tag === activeTag)
+    return (
+      <>
+        {filterTaskList.map(each => (
+          <TaskListLi key={each.id}>
+            <TaskText>{each.task}</TaskText>
+            <TaskTag>{each.tag}</TaskTag>
+          </TaskListLi>
+        ))}
+      </>
+    )
+  }
+
+  renderAddTaskView = () => {
+    const {taskList, activeTag} = this.state
+
+    return (
+      <AddTaskContainer>
+        <TagsHeading>Tags</TagsHeading>
+        <TagsListUl>
+          {tagsList.map(each => {
+            const isActive = activeTag === each.optionId
+            return (
+              <TagsList key={each.optionId}>
+                <TagsButton
+                  type="button"
+                  value={each.optionId}
+                  onClick={this.onClickActiveTag}
+                  isActive={isActive}
+                >
+                  {each.displayText}
+                </TagsButton>
+              </TagsList>
+            )
+          })}
+        </TagsListUl>
+        <TagsHeading>Tasks</TagsHeading>
+        <TaskListUl>
+          {taskList.length === 0 ? (
+            <NoTaskText>No Tasks Added Yet</NoTaskText>
+          ) : (
+            this.renderTaskCard()
+          )}
+        </TaskListUl>
+      </AddTaskContainer>
+    )
+  }
+
+  render() {
+    return (
+      <HomeContainer>
+        {this.renderCreateTaskView()}
+        {this.renderAddTaskView()}
+      </HomeContainer>
     )
   }
 }
-
 export default MyTask
